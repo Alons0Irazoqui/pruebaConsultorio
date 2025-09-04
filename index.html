@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Medicity Care — Clínica Integral</title>
+  <meta name="description" content="Clínica integral de salud con médicos especialistas, agendado en línea y atención personalizada." />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Tailwind on CDN: enable arbitrary values & custom container
+    tailwind.config = {
+      theme: {
+        container: { center: true, padding: "1rem" },
+        extend: {
+          fontFamily: {
+            display: ["Inter", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica", "Arial"],
+            body: ["Inter", "system-ui", "-apple-system", "Segoe UI", "Roboto", "Helvetica", "Arial"],
+          },
+          boxShadow: {
+            soft: "0 10px 30px rgba(2, 6, 23, 0.08)",
+            glass: "0 8px 24px rgba(2,6,23,.12)",
+          },
+          keyframes: {
+            floaty: { '0%, 100%': { transform: 'translateY(0px)' }, '50%': { transform: 'translateY(-8px)' } },
+            shimmer: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' }
+            },
+            fadeup: {
+              '0%': { opacity: 0, transform: 'translateY(18px)' },
+              '100%': { opacity: 1, transform: 'translateY(0)' }
+            },
+            scalein: { '0%': { transform: 'scale(.94)', opacity: 0 }, '100%': { transform: 'scale(1)', opacity: 1 }},
+          },
+          animation: {
+            floaty: 'floaty 6s ease-in-out infinite',
+            fadeup: 'fadeup .7s ease forwards',
+            scalein: 'scalein .5s ease forwards',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- CSS Variables so colors are easy to change later -->
+  <style>
+    :root{
+      --color-primary: #2563eb;  /* Indigo-600 */
+      --color-primary-2: #0ea5e9; /* Sky-500 */
+      --color-secondary: #10b981; /* Emerald-500 */
+      --color-accent: #22d3ee;   /* Cyan-400 */
+      --color-bg: #f8fafc;       /* Slate-50 */
+      --color-bg-2: #eef2ff;     /* Indigo-50 */
+      --color-dark: #0f172a;     /* Slate-900 */
+      --color-muted: #64748b;    /* Slate-500 */
+      --radius: 18px;
+      --radius-lg: 28px;
+    }
+    /* Reusable tokens */
+    .btn{ @apply inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200; }
+    .btn-primary{ background: linear-gradient(90deg, var(--color-primary), var(--color-primary-2)); color:white; box-shadow: 0 12px 28px rgba(37,99,235,.22); }
+    .btn-primary:hover{ filter: brightness(1.05); transform: translateY(-1px); }
+    .btn-ghost{ @apply border border-slate-200 text-slate-700 bg-white hover:bg-slate-50; }
+    .chip{ @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border; border-color: rgba(15,23,42,.08); background: rgba(255,255,255,.6); backdrop-filter: blur(6px); }
+
+    /* Glass panel */
+    .glass{ background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.7)); box-shadow: 0 12px 36px rgba(2,6,23,.08); border: 1px solid rgba(2,6,23,.06); }
+
+    /* Reveal base (JS toggles .reveal-visible) */
+    .reveal{ opacity:0; transform: translateY(14px); transition: all .7s ease; }
+    .reveal-visible{ opacity:1; transform: translateY(0); }
+
+    /* Fancy gradient text */
+    .grad-text{ background: linear-gradient(90deg, var(--color-primary), var(--color-secondary)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+    /* Shimmer line */
+    .shimmer{ background: linear-gradient(110deg, rgba(255,255,255,0) 20%, rgba(255,255,255,.7) 40%, rgba(255,255,255,0) 60%); background-size: 200% 100%; animation: shimmer 2s infinite; }
+
+    /* Rounded utilities using CSS vars to tweak radius everywhere */
+    .radius{ border-radius: var(--radius); }
+    .radius-lg{ border-radius: var(--radius-lg); }
+
+    /* Simple accordion animation */
+    details[open] summary svg{ transform: rotate(180deg); }
+
+    /* Scrollbar subtle */
+    ::-webkit-scrollbar{ width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb{ background: linear-gradient(180deg, var(--color-primary), var(--color-secondary)); border-radius: 10px; }
+
+    /* Floating blobs */
+    .blob{ filter: blur(50px); opacity:.25; }
+
+    .btn{
+        padding: 10px 20px;
+        border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="bg-[var(--color-bg)] text-slate-800 antialiased tracking-tight">
+  <!-- Decorative Gradients / Blobs -->
+  <div class="fixed inset-0 -z-10 pointer-events-none">
+    <div class="absolute -top-24 -left-24 w-[480px] h-[480px] rounded-full bg-[var(--color-primary)] blob animate-floaty"></div>
+    <div class="absolute -bottom-24 -right-24 w-[520px] h-[520px] rounded-full bg-[var(--color-secondary)] blob animate-floaty" style="animation-delay:.8s"></div>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header id="header" class="sticky top-0 z-50 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 border-b border-slate-200/60">
+    <div class="container flex items-center justify-between py-3">
+      <a href="#" class="flex items-center gap-3">
+        <span class="w-10 h-10 rounded-xl bg-[var(--color-primary)] grid place-items-center text-white font-bold shadow-glass">MC</span>
+        <span class="font-bold text-xl">Medicity <span class="text-slate-400 font-medium">Care</span></span>
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="#servicios" class="hover:text-[var(--color-primary)]">Servicios</a>
+        <a href="#beneficios" class="hover:text-[var(--color-primary)]">Beneficios</a>
+        <a href="#doctores" class="hover:text-[var(--color-primary)]">Equipo</a>
+        <a href="#faq" class="hover:text-[var(--color-primary)]">FAQ</a>
+        <a href="#contacto" class="hover:text-[var(--color-primary)]">Contacto</a>
+      </nav>
+
+      <div class="hidden md:flex items-center gap-3">
+        <a href="#cita" class="btn btn-ghost">Ver Horarios</a>
+        <a href="#cita" class="btn btn-primary">Agendar Cita</a>
+      </div>
+
+      <!-- Mobile hamburger -->
+      <button id="btnMenu" class="md:hidden w-10 h-10 grid place-items-center rounded-lg border border-slate-200"> 
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile Sheet -->
+    <div id="mobileMenu" class="md:hidden fixed inset-x-0 top-[64px] bg-white border-y border-slate-200/80 shadow-glass translate-y-[-120%] opacity-0 pointer-events-none transition-all duration-300">
+      <div class="container py-4 flex flex-col gap-2 text-lg">
+        <a class="py-2" href="#servicios">Servicios</a>
+        <a class="py-2" href="#beneficios">Beneficios</a>
+        <a class="py-2" href="#doctores">Equipo</a>
+        <a class="py-2" href="#faq">FAQ</a>
+        <a class="py-2" href="#contacto">Contacto</a>
+        <div class="pt-2 flex gap-3">
+          <a href="#cita" class="btn btn-ghost flex-1">Ver Horarios</a>
+          <a href="#cita" class="btn btn-primary flex-1">Agendar</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="container grid lg:grid-cols-2 gap-10 items-center py-12 md:py-20">
+      <div class="reveal">
+        <h1 class="mt-4 text-4xl md:text-5xl font-extrabold leading-tight">
+          Proporcionamos <span class="grad-text">Atención Médica</span> de Primer Nivel para Toda la Familia
+        </h1>
+        <p class="mt-4 text-lg text-slate-600 max-w-xl">Cuidamos tu salud con especialistas certificados, equipos de última generación y un sistema de citas fácil y rápido. Atención presencial y por videollamada.</p>
+
+        <!-- Metrics -->
+        <div class="mt-6 grid grid-cols-3 gap-3">
+          <div class="glass radius p-4 text-center">
+            <p class="text-2xl font-bold" data-count="10">0</p>
+            <p class="text-xs text-slate-500">Especialidades</p>
+          </div>
+          <div class="glass radius p-4 text-center">
+            <p class="text-2xl font-bold" data-count="99">0%</p>
+            <p class="text-xs text-slate-500">Satisfacción</p>
+          </div>
+          <div class="glass radius p-4 text-center">
+            <p class="text-2xl font-bold" data-count="20000">0</p>
+            <p class="text-xs text-slate-500">Citas Agendadas</p>
+          </div>
+        </div>
+
+        <!-- CTAs -->
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a class="btn btn-primary" href="#cita">Agendar Cita</a>
+          <a class="btn btn-ghost" href="#video">Ver Video</a>
+        </div>
+      </div>
+
+      <!-- Right: Hero Image + Form Card -->
+      <div class="relative reveal">
+        <div class="absolute -top-10 -right-6 w-64 h-64 rounded-full bg-[var(--color-accent)] opacity-20 blur-2xl"></div>
+
+        <div class="relative rounded-[28px] overflow-hidden shadow-soft border border-slate-200 bg-white">
+          <img class="w-full h-72 object-cover" src="https://i.pinimg.com/1200x/98/11/c3/9811c350bfe52f0f7263b93d3fb008d3.jpg" alt="Médicos atendiendo"/>
+          <!-- Booking Card overlay -->
+          <div class="p-6 md:p-8">
+            <div class="flex items-center gap-3">
+              <div>
+                <h3 class="font-semibold text-lg">Reserva tu cita en minutos</h3>
+                <p class="text-xs text-slate-500">Confirmación inmediata por WhatsApp</p>
+              </div>
+            </div>
+            <form id="cita" class="mt-5 grid sm:grid-cols-2 gap-3">
+              <label class="block">
+                <span class="text-sm text-slate-600">Nombre</span>
+                <input required type="text" placeholder="Juan Pérez" class="mt-1 w-full radius border-slate-200 focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] focus:ring-2 border p-3" />
+              </label>
+              <label class="block">
+                <span class="text-sm text-slate-600">Teléfono</span>
+                <input required type="tel" placeholder="(xxx) xxx - xxxx" class="mt-1 w-full radius border-slate-200 focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] focus:ring-2 border p-3" />
+              </label>
+              <label class="block">
+                <span class="text-sm text-slate-600">Fecha preferida</span>
+                <input required type="date" class="mt-1 w-full radius border-slate-200 focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] focus:ring-2 border p-3" />
+              </label>
+              <label class="block">
+                <span class="text-sm text-slate-600">Horario</span>
+                <input required type="time" class="mt-1 w-full radius border-slate-200 focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] focus:ring-2 border p-3" />
+              </label>
+              <div class="sm:col-span-2 flex gap-3 items-center">
+                <button type="submit" class="btn btn-primary flex-1">Confirmar Cita</button>
+                <button type="button" id="btnWhats" class="btn btn-ghost">WhatsApp</button>
+              </div>
+              <p id="msgCita" class="sm:col-span-2 text-sm text-emerald-600 font-medium hidden">¡Listo! Te enviamos los detalles a tu WhatsApp.</p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services -->
+  <section id="servicios" class="py-16 md:py-24">
+    <div class="container">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Una Amplia Gama de <span class="grad-text">Servicios</span></h2>
+        <p class="mt-3 text-slate-600">Atención integral con especialistas certificados y protocolos basados en evidencia.</p>
+      </div>
+
+      <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- card 1 -->
+        <article class="glass radius p-6 reveal">
+          <div class="w-12 h-12 rounded-xl bg-[var(--color-bg-2)] grid place-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-[var(--color-primary)]"><path d="M11.25 3.75a.75.75 0 011.5 0V7.5h3.75a.75.75 0 010 1.5H12.75v3.75a.75.75 0 01-1.5 0V9H7.5a.75.75 0 010-1.5h3.75V3.75z"/><path fill-rule="evenodd" d="M3 12a9 9 0 1118 0 9 9 0 01-18 0zm9-7.5a7.5 7.5 0 100 15 7.5 7.5 0 000-15z" clip-rule="evenodd"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-lg">Medicina General</h3>
+          <p class="mt-2 text-slate-600">Consultas integrales, diagnósticos precisos y seguimiento continuo para toda la familia.</p>
+          <div class="mt-4 flex gap-2 flex-wrap">
+            <span class="chip">Chequeos</span>
+            <span class="chip">Control crónico</span>
+            <span class="chip">Telemedicina</span>
+          </div>
+          <img class="mt-6 w-full h-40 object-cover rounded-xl" src="https://i.pinimg.com/1200x/a7/65/7f/a7657ff80897eac94dfa81c4f4ce3e61.jpg" alt="Consulta médica"/>
+        </article>
+
+        <!-- card 2 -->
+        <article class="glass radius p-6 reveal">
+          <div class="w-12 h-12 rounded-xl bg-[var(--color-bg-2)] grid place-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-[var(--color-primary)]"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-lg">Odontología</h3>
+          <p class="mt-2 text-slate-600">Limpiezas, blanqueamientos, implantes y ortodoncia con tecnología de punta.</p>
+          <div class="mt-4 flex gap-2 flex-wrap">
+            <span class="chip">Limpieza</span>
+            <span class="chip">Blanqueamiento</span>
+            <span class="chip">Implantes</span>
+          </div>
+          <img class="mt-6 w-full h-40 object-cover rounded-xl" src="https://i.pinimg.com/1200x/6a/6f/2e/6a6f2e6aa9bc953619c0729365789ee0.jpg" alt="Odontología"/>
+        </article>
+
+        <!-- card 3 -->
+        <article class="glass radius p-6 reveal">
+          <div class="w-12 h-12 rounded-xl bg-[var(--color-bg-2)] grid place-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-[var(--color-primary)]"><path fill-rule="evenodd" d="M12 2.25a.75.75 0 01.75.75v2.69a6.75 6.75 0 015.56 5.56H21a.75.75 0 010 1.5h-2.69a6.75 6.75 0 01-5.56 5.56V21a.75.75 0 01-1.5 0v-2.69a6.75 6.75 0 01-5.56-5.56H3a.75.75 0 010-1.5h2.69a6.75 6.75 0 015.56-5.56V3a.75.75 0 01.75-.75zM6.75 12a5.25 5.25 0 1010.5 0 5.25 5.25 0 00-10.5 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-lg">Dermatología</h3>
+          <p class="mt-2 text-slate-600">Diagnóstico de piel, tratamientos láser y manejo de acné, rosácea y más.</p>
+          <div class="mt-4 flex gap-2 flex-wrap">
+            <span class="chip">Láser</span>
+            <span class="chip">Acné</span>
+            <span class="chip">Manchas</span>
+          </div>
+          <img class="mt-6 w-full h-40 object-cover rounded-xl" src="https://i.pinimg.com/736x/84/db/6d/84db6d6e64d203254126d52b017f398f.jpg" alt="Dermatología"/>
+        </article>
+
+        <!-- card 4 -->
+        <article class="glass radius p-6 reveal">
+          <div class="w-12 h-12 rounded-xl bg-[var(--color-bg-2)] grid place-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-[var(--color-primary)]"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-lg">Pediatría</h3>
+          <p class="mt-2 text-slate-600">Controles de crecimiento, vacunas y atención cálida para los más pequeños.</p>
+          <div class="mt-4 flex gap-2 flex-wrap">
+            <span class="chip">Vacunas</span>
+            <span class="chip">Control sano</span>
+            <span class="chip">Teleconsulta</span>
+          </div>
+          <img class="mt-6 w-full h-40 object-cover rounded-xl" src="https://i.pinimg.com/736x/95/05/b4/9505b4f82161f346f337cc9e8fa10593.jpg" alt="Pediatría"/>
+        </article>
+
+        <!-- card 5 -->
+        <article class="glass radius p-6 reveal">
+          <div class="w-12 h-12 rounded-xl bg-[var(--color-bg-2)] grid place-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-[var(--color-primary)]"><path d="M12 6a3 3 0 00-3 3v1.5H7.5A2.25 2.25 0 005.25 12.75v4.5A2.25 2.25 0 007.5 19.5h9a2.25 2.25 0 002.25-2.25v-4.5A2.25 2.25 0 0016.5 10.5H15V9a3 3 0 00-3-3z"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-lg">Ginecología</h3>
+          <p class="mt-2 text-slate-600">Salud integral de la mujer, planificación y chequeos preventivos.</p>
+          <div class="mt-4 flex gap-2 flex-wrap">
+            <span class="chip">Ultrasonido</span>
+            <span class="chip">Papanicolaou</span>
+            <span class="chip">Control</span>
+          </div>
+          <img class="mt-6 w-full h-40 object-cover rounded-xl" src="https://i.pinimg.com/736x/a2/a1/08/a2a108336a872687360d68cf233a79df.jpg" alt="Ginecología"/>
+        </article>
+
+        <!-- card 6 -->
+        <article class="glass radius p-6 reveal">
+          <div class="w-12 h-12 rounded-xl bg-[var(--color-bg-2)] grid place-items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-[var(--color-primary)]"><path fill-rule="evenodd" d="M7.5 6.75A3.75 3.75 0 0111.25 3h1.5A3.75 3.75 0 0116.5 6.75V9h1.5A2.25 2.25 0 0120.25 11.25v7.5A2.25 2.25 0 0118 21H6a2.25 2.25 0 01-2.25-2.25v-7.5A2.25 2.25 0 016.75 9H8.25V6.75zM9.75 9V6.75a1.5 1.5 0 011.5-1.5h1.5a1.5 1.5 0 011.5 1.5V9h-4.5z" clip-rule="evenodd"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-lg">Fisioterapia</h3>
+          <p class="mt-2 text-slate-600">Rehabilitación, terapia manual y programas personalizados para tu movilidad.</p>
+          <div class="mt-4 flex gap-2 flex-wrap">
+            <span class="chip">Diatermia</span>
+            <span class="chip">Electroterapia</span>
+            <span class="chip">Ejercicio</span>
+          </div>
+          <img class="mt-6 w-full h-40 object-cover rounded-xl" src="https://i.pinimg.com/736x/e4/a1/6f/e4a16fb0b1f06deeab45f442b8b22ce3.jpg" alt="Fisioterapia"/>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Choose Us / Benefits -->
+  <section id="beneficios" class="py-16 md:py-24 bg-white relative overflow-hidden">
+    <div class="absolute -top-10 right-10 w-40 h-40 rounded-full bg-[var(--color-primary)] opacity-10 blur-2xl"></div>
+    <div class="container grid lg:grid-cols-2 gap-12 items-center">
+      <div class="reveal">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Beneficios de Nuestros Servicios: <span class="grad-text">Tu Ruta a una Vida Sana</span></h2>
+        <p class="mt-3 text-slate-600">Tecnología avanzada, experiencia humana y procesos digitales que simplifican tu atención médica.</p>
+
+        <ul class="mt-6 space-y-4">
+          <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-[var(--color-secondary)] text-white grid place-items-center">✓</span> Citas en línea y recordatorios automáticos</li>
+          <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-[var(--color-secondary)] text-white grid place-items-center">✓</span> Resultados y recetas digitales</li>
+          <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-[var(--color-secondary)] text-white grid place-items-center">✓</span> Equipo multidisciplinario</li>
+          <li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-[var(--color-secondary)] text-white grid place-items-center">✓</span> Protocolos basados en evidencia</li>
+        </ul>
+
+        <div class="mt-8 grid grid-cols-2 gap-4">
+          <div class="glass radius p-5 text-center">
+            <p class="text-3xl font-extrabold grad-text">+10</p>
+            <p class="text-xs text-slate-500">Especialistas</p>
+          </div>
+          <div class="glass radius p-5 text-center">
+            <p class="text-3xl font-extrabold grad-text">99%</p>
+            <p class="text-xs text-slate-500">Pacientes Satisfechos</p>
+          </div>
+        </div>
+
+        <div class="mt-8 flex gap-3">
+          <a class="btn btn-primary" href="#cita">Agendar</a>
+          <a class="btn btn-ghost" href="#faq">Preguntas Frecuentes</a>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="relative radius-lg overflow-hidden shadow-glass border border-slate-200">
+          <video src="https://v1.pinimg.com/videos/mc/expMp4/ca/81/a6/ca81a656c1aa1fc8be0d7b1ffc1d5c4e_t1.mp4" class="w-full h-[460px] object-cover" alt="Equipo médico" controls>
+          <button id="video" class="absolute inset-0 grid place-items-center group">
+            <span class="w-16 h-16 rounded-full bg-white/90 border border-slate-200 grid place-items-center shadow-lg transition-transform group-hover:scale-105"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Timetable / Opening Hours -->
+  <section class="py-16 md:py-24">
+    <div class="container">
+      <div class="glass radius-lg p-6 md:p-10">
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+          <div class="reveal">
+            <h3 class="text-2xl md:text-3xl font-extrabold">Horarios de Atención</h3>
+            <p class="mt-2 text-slate-600">Agenda tu visita según tu disponibilidad. También contamos con atención por videollamada.</p>
+            <div class="mt-6 grid grid-cols-2 gap-4 text-sm">
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <p class="font-medium">Lunes a Viernes</p>
+                <p class="text-slate-600">08:00 – 20:00</p>
+              </div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <p class="font-medium">Sábado</p>
+                <p class="text-slate-600">09:00 – 14:00</p>
+              </div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <p class="font-medium">Emergencias</p>
+                <p class="text-slate-600">24/7</p>
+              </div>
+              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <p class="font-medium">Ubicación</p>
+                <p class="text-slate-600">Los Mochis, Sinaloa</p>
+              </div>
+            </div>
+          </div>
+          <div class="reveal">
+            <img class="w-full h-[320px] object-cover rounded-2xl" src="https://i.pinimg.com/736x/e2/65/23/e26523870db89f1b2a92a785edd502ee.jpg" alt="Recepción moderna" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Doctors / Team -->
+  <section id="doctores" class="py-16 md:py-24 bg-white">
+    <div class="container">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Nuestro <span class="grad-text">Equipo Médico</span></h2>
+        <p class="mt-3 text-slate-600">Profesionales con experiencia y trato humano.</p>
+      </div>
+      <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Doc card -->
+        <div class="glass radius p-4 reveal">
+          <img class="w-full h-56 object-cover rounded-xl" src="https://images.unsplash.com/photo-1607746882042-944635dfe10e?q=80&w=1200&auto=format&fit=crop" alt="Dra. López"/>
+          <div class="mt-3">
+            <h4 class="font-semibold">Dra. Andrea López</h4>
+            <p class="text-sm text-slate-500">Medicina General</p>
+          </div>
+        </div>
+        <div class="glass radius p-4 reveal">
+          <img class="w-full h-56 object-cover rounded-xl" src="https://images.unsplash.com/photo-1550831107-1553da8c8464?q=80&w=1200&auto=format&fit=crop" alt="Dr. Hernández"/>
+          <div class="mt-3">
+            <h4 class="font-semibold">Dr. Miguel Hernández</h4>
+            <p class="text-sm text-slate-500">Odontólogo</p>
+          </div>
+        </div>
+        <div class="glass radius p-4 reveal">
+          <img class="w-full h-56 object-cover rounded-xl" src="https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=1200&auto=format&fit=crop" alt="Dra. Ruiz"/>
+          <div class="mt-3">
+            <h4 class="font-semibold">Dr. Carlos Perez</h4>
+            <p class="text-sm text-slate-500">Dermatólogo</p>
+          </div>
+        </div>
+        <div class="glass radius p-4 reveal">
+          <img class="w-full h-56 object-cover rounded-xl" src="https://images.unsplash.com/photo-1527613426441-4da17471b66d?q=80&w=1200&auto=format&fit=crop" alt="Dr. Pérez"/>
+          <div class="mt-3">
+            <h4 class="font-semibold">Dra. Sofia Ruiz</h4>
+            <p class="text-sm text-slate-500">Pediatra</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials / Carousel -->
+  <section class="py-16 md:py-24">
+    <div class="container">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Lo que dicen nuestros <span class="grad-text">pacientes</span></h2>
+        <p class="mt-3 text-slate-600">Historias reales de atención excepcional.</p>
+      </div>
+
+      <div class="mt-10">
+        <div class="relative overflow-hidden radius-lg border border-slate-200 shadow-soft bg-white">
+          <div id="carousel" class="flex transition-transform duration-500">
+            <!-- Slide 1 -->
+            <figure class="min-w-full grid md:grid-cols-2">
+              <img class="h-72 md:h-96 w-full object-cover" src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=1400&auto=format&fit=crop" alt="Sala de atención"/>
+              <blockquote class="p-6 md:p-10 flex flex-col justify-center">
+                <p class="text-xl md:text-2xl font-medium">“Excelente servicio y diagnóstico acertado. Agendar fue facilísimo y me atendieron a tiempo.”</p>
+                <figcaption class="mt-4 text-slate-500">— Mariana G.</figcaption>
+              </blockquote>
+            </figure>
+            <!-- Slide 2 -->
+            <figure class="min-w-full grid md:grid-cols-2">
+              <img class="h-72 md:h-96 w-full object-cover" src="https://i.pinimg.com/1200x/65/78/99/657899f7a8ef693754803c6cb4fb35d9.jpg" alt="Consulta"/>
+              <blockquote class="p-6 md:p-10 flex flex-col justify-center">
+                <p class="text-xl md:text-2xl font-medium">“Los doctores son muy humanos y explican todo con calma. Me sentí acompañada en todo momento.”</p>
+                <figcaption class="mt-4 text-slate-500">— Alejandra R.</figcaption>
+              </blockquote>
+            </figure>
+            <!-- Slide 3 -->
+            <figure class="min-w-full grid md:grid-cols-2">
+              <img class="h-72 md:h-96 w-full object-cover" src="https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=1400&auto=format&fit=crop" alt="Recepción"/>
+              <blockquote class="p-6 md:p-10 flex flex-col justify-center">
+                <p class="text-xl md:text-2xl font-medium">“Instalaciones modernas y súper limpias. Volvería sin pensarlo.”</p>
+                <figcaption class="mt-4 text-slate-500">— Jesús A.</figcaption>
+              </blockquote>
+            </figure>
+          </div>
+
+          <!-- Controls -->
+          <div class="absolute inset-0 pointer-events-none flex items-center justify-between">
+            <button id="prev" class="pointer-events-auto m-3 md:m-6 w-10 h-10 rounded-full bg-white/90 border border-slate-200 grid place-items-center shadow">
+              ‹
+            </button>
+            <button id="next" class="pointer-events-auto m-3 md:m-6 w-10 h-10 rounded-full bg-white/90 border border-slate-200 grid place-items-center shadow">
+              ›
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing / Plans (optional for clínicas) -->
+  <section class="py-16 md:py-24 bg-white">
+    <div class="container">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Paquetes & <span class="grad-text">Promociones</span></h2>
+        <p class="mt-3 text-slate-600">Opciones transparentes para tu cuidado y prevención.</p>
+      </div>
+
+      <div class="mt-10 grid md:grid-cols-3 gap-6">
+        <!-- Basic -->
+        <div class="glass radius p-6 flex flex-col reveal">
+          <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 w-max">Básico</span>
+          <h3 class="mt-4 text-3xl font-extrabold">$399 <span class="text-base text-slate-500">MXN</span></h3>
+          <p class="mt-2 text-slate-600">Consulta general + receta digital</p>
+          <ul class="mt-4 space-y-2 text-sm">
+            <li>✓ 20–30 min</li>
+            <li>✓ Historial clínico</li>
+            <li>— Exámenes de laboratorio</li>
+          </ul>
+          <a class="btn btn-primary mt-6" href="#cita">Agendar</a>
+        </div>
+
+        <!-- Popular -->
+        <div class="relative glass radius p-6 flex flex-col border-2 border-[var(--color-primary)] reveal">
+          <span class="absolute -top-3 right-5 text-xs px-2 py-1 rounded-full text-white bg-[var(--color-primary)] shadow">Más popular</span>
+          <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 w-max">Integral</span>
+          <h3 class="mt-4 text-3xl font-extrabold">$799 <span class="text-base text-slate-500">MXN</span></h3>
+          <p class="mt-2 text-slate-600">Consulta + laboratorio básico + seguimiento</p>
+          <ul class="mt-4 space-y-2 text-sm">
+            <li>✓ 40–50 min</li>
+            <li>✓ Resultados digitales</li>
+            <li>✓ 1 seguimiento en línea</li>
+          </ul>
+          <a class="btn btn-primary mt-6" href="#cita">Agendar</a>
+        </div>
+
+        <!-- Premium -->
+        <div class="glass radius p-6 flex flex-col reveal">
+          <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 w-max">Premium</span>
+          <h3 class="mt-4 text-3xl font-extrabold">$1,299 <span class="text-base text-slate-500">MXN</span></h3>
+          <p class="mt-2 text-slate-600">Consulta + laboratorios ampliados + plan nutricional</p>
+          <ul class="mt-4 space-y-2 text-sm">
+            <li>✓ 60 min</li>
+            <li>✓ Informe integral</li>
+            <li>✓ 2 seguimientos</li>
+          </ul>
+          <a class="btn btn-primary mt-6" href="#cita">Agendar</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-16 md:py-24">
+    <div class="container grid lg:grid-cols-2 gap-10 items-start">
+      <div class="reveal">
+        <h2 class="text-3xl md:text-4xl font-extrabold">Preguntas <span class="grad-text">Frecuentes</span></h2>
+        <p class="mt-3 text-slate-600">Encuentra respuestas rápidas. Si necesitas ayuda, escríbenos por WhatsApp.</p>
+        <img class="mt-8 w-full h-72 object-cover rounded-2xl" src="https://i.pinimg.com/736x/ed/ff/e6/edffe6c296e013eac218ce72da5e016a.jpg" alt="Atención clínica"/>
+      </div>
+      <div class="space-y-3 reveal">
+        <details class="glass radius p-4">
+          <summary class="flex items-center justify-between cursor-pointer font-medium">¿Aceptan seguros médicos?
+            <svg class="w-5 h-5 transition-transform" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+          </summary>
+          <p class="mt-3 text-slate-600">Sí, trabajamos con múltiples aseguradoras. Escríbenos para verificar tu cobertura.</p>
+        </details>
+        <details class="glass radius p-4">
+          <summary class="flex items-center justify-between cursor-pointer font-medium">¿Ofrecen consultas por videollamada?
+            <svg class="w-5 h-5 transition-transform" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+          </summary>
+          <p class="mt-3 text-slate-600">Sí, agenda como “Teleconsulta” y te enviaremos el enlace seguro.</p>
+        </details>
+        <details class="glass radius p-4">
+          <summary class="flex items-center justify-between cursor-pointer font-medium">¿Cómo preparo mi consulta?
+            <svg class="w-5 h-5 transition-transform" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+          </summary>
+          <p class="mt-3 text-slate-600">Lleva tus estudios previos, lista de medicamentos y síntomas. Llega 10 minutos antes.</p>
+        </details>
+        <details class="glass radius p-4">
+          <summary class="flex items-center justify-between cursor-pointer font-medium">¿Tienen estacionamiento?
+            <svg class="w-5 h-5 transition-transform" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+          </summary>
+          <p class="mt-3 text-slate-600">Sí, contamos con espacios reservados para pacientes y personas con discapacidad.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact / Map -->
+  <section id="contacto" class="py-16 md:py-24 bg-white">
+    <div class="container grid lg:grid-cols-5 gap-8 items-start">
+      <div class="lg:col-span-2 glass radius-lg p-6 reveal">
+        <h3 class="text-2xl font-extrabold">Contáctanos</h3>
+        <p class="mt-2 text-slate-600">Estamos para ayudarte. Respuesta promedio en 15 minutos.</p>
+        <form id="contactForm" class="mt-4 space-y-3">
+          <input class="w-full border p-3 radius border-slate-200 focus:ring-2 focus:ring-[var(--color-primary)]" placeholder="Nombre" required />
+          <input class="w-full border p-3 radius border-slate-200 focus:ring-2 focus:ring-[var(--color-primary)]" placeholder="Correo" type="email" required />
+          <textarea class="w-full border p-3 radius border-slate-200 focus:ring-2 focus:ring-[var(--color-primary)]" rows="4" placeholder="Cuéntanos tu situación..." required></textarea>
+          <button class="btn btn-primary w-full" type="submit">Enviar Mensaje</button>
+          <p id="msgContacto" class="text-emerald-600 text-sm font-medium hidden">¡Gracias! Te responderemos muy pronto.</p>
+        </form>
+
+        <div class="mt-6 text-sm text-slate-600">
+          <p>Blvd. Principal 123, Los Mochis, Sinaloa</p>
+          <p>(668) 123 45 67</p>
+          <p>hola@medicity.care</p>
+        </div>
+      </div>
+      <div class="lg:col-span-3 reveal">
+        <div class="radius-lg overflow-hidden shadow-soft border border-slate-200 h-[420px]">
+          <iframe title="Mapa" width="100%" height="100%" style="border:0" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3604.598121450929!2d-109.000000!3d25.833333!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x86bcd8b8c9b7c9d1%3A0x0000000000000000!2sLos%20Mochis%2C%20Sin.!5e0!3m2!1ses-419!2smx!4v1712012345678"></iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Newsletter -->
+  <section class="py-14">
+    <div class="container">
+      <div class="glass radius-lg p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div>
+          <h3 class="text-2xl font-extrabold">Recibe consejos de salud</h3>
+          <p class="text-slate-600 mt-1">Una vez por mes. Sin spam.</p>
+        </div>
+        <form id="newsletter" class="flex w-full md:w-auto items-center gap-3">
+          <input class="flex-1 md:w-96 border p-3 radius border-slate-200 focus:ring-2 focus:ring-[var(--color-primary)]" placeholder="Tu correo" type="email" required />
+          <button class="btn btn-primary" type="submit">Suscribirme</button>
+          <p id="msgNews" class="text-emerald-600 text-sm font-medium hidden">¡Gracias por suscribirte!</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="pt-16 pb-8 bg-[var(--color-dark)] text-slate-300">
+    <div class="container grid md:grid-cols-4 gap-10">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="w-10 h-10 rounded-xl bg-white/10 grid place-items-center text-white font-bold">MC</span>
+          <span class="font-bold text-white">Medicity Care</span>
+        </div>
+        <p class="mt-3 text-sm opacity-80">Atención médica integral con enfoque humano y tecnología moderna.</p>
+      </div>
+      <div>
+        <h5 class="font-semibold text-white">Clínica</h5>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><a href="#servicios" class="hover:underline">Servicios</a></li>
+          <li><a href="#beneficios" class="hover:underline">Beneficios</a></li>
+          <li><a href="#doctores" class="hover:underline">Equipo</a></li>
+          <li><a href="#faq" class="hover:underline">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 class="font-semibold text-white">Legal</h5>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><a href="#" class="hover:underline">Aviso de Privacidad</a></li>
+          <li><a href="#" class="hover:underline">Términos</a></li>
+          <li><a href="#" class="hover:underline">Cookies</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 class="font-semibold text-white">Contacto</h5>
+        <p class="mt-3 text-sm">hola@medicity.care</p>
+        <p class="text-sm">(668) 123 45 67</p>
+        <div class="mt-4 flex gap-3">
+          <a class="w-9 h-9 grid place-items-center rounded-full bg-white/10 hover:bg-white/20" href="#" aria-label="Facebook">f</a>
+          <a class="w-9 h-9 grid place-items-center rounded-full bg-white/10 hover:bg-white/20" href="#" aria-label="Instagram">ig</a>
+          <a class="w-9 h-9 grid place-items-center rounded-full bg-white/10 hover:bg-white/20" href="#" aria-label="WhatsApp">wa</a>
+        </div>
+      </div>
+    </div>
+    <div class="container mt-10 pt-6 border-t border-white/10 text-center text-xs opacity-70">© <span id="year"></span> Medicity Care. Todos los derechos reservados.</div>
+  </footer>
+
+  <!-- Floating WhatsApp Button -->
+  <a href="#cita" class="fixed bottom-6 right-6 md:right-10 z-40 shadow-glass rounded-full px-5 py-3 text-white font-medium bg-[var(--color-secondary)] hover:scale-[1.03] transition">Agenda por WhatsApp</a>
+
+  <!-- Scripts: interactions -->
+  <script>
+    // Mobile menu toggle
+    const btnMenu = document.getElementById('btnMenu');
+    const mobileMenu = document.getElementById('mobileMenu');
+    btnMenu.addEventListener('click', () => {
+      const open = mobileMenu.classList.contains('opacity-100');
+      mobileMenu.classList.toggle('opacity-100');
+      mobileMenu.classList.toggle('translate-y-0');
+      mobileMenu.classList.toggle('opacity-0');
+      mobileMenu.classList.toggle('translate-y-[-120%]');
+      mobileMenu.classList.toggle('pointer-events-none');
+    });
+
+    // Count up metrics
+    const counters = document.querySelectorAll('[data-count]');
+    const countObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting){
+          const el = entry.target; const goal = +el.dataset.count;
+          let start = 0; const step = Math.ceil(goal / 60);
+          const timer = setInterval(() => { start += step; if(start >= goal){ start = goal; clearInterval(timer);} el.textContent = goal === 99 ? start + '%' : start.toLocaleString('es-MX'); }, 16);
+          countObserver.unobserve(el);
+        }
+      })
+    }, { threshold: .6 });
+    counters.forEach(c => countObserver.observe(c));
+
+    // Reveal on scroll
+    const revealEls = document.querySelectorAll('.reveal');
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('reveal-visible'); obs.unobserve(e.target);} });
+    }, { threshold: .2 });
+    revealEls.forEach(el => obs.observe(el));
+
+    // Carousel
+    const carousel = document.getElementById('carousel');
+    const prev = document.getElementById('prev');
+    const next = document.getElementById('next');
+    let index = 0;
+    function updateCarousel(){ carousel.style.transform = `translateX(-${index * 100}%)`; }
+    prev.addEventListener('click', ()=>{ index = (index - 1 + 3) % 3; updateCarousel();});
+    next.addEventListener('click', ()=>{ index = (index + 1) % 3; updateCarousel();});
+
+    // Forms (fake submit)
+    const citaForm = document.getElementById('cita');
+    const msgCita = document.getElementById('msgCita');
+    citaForm.addEventListener('submit', (e)=>{ e.preventDefault(); msgCita.classList.remove('hidden'); setTimeout(()=> msgCita.classList.add('hidden'), 4000); });
+    document.getElementById('btnWhats').addEventListener('click', ()=> alert('Te contactaremos por WhatsApp.'));
+
+    const contactForm = document.getElementById('contactForm');
+    const msgContacto = document.getElementById('msgContacto');
+    contactForm.addEventListener('submit', (e)=>{ e.preventDefault(); msgContacto.classList.remove('hidden'); setTimeout(()=> msgContacto.classList.add('hidden'), 4000); });
+
+    const newsletter = document.getElementById('newsletter');
+    const msgNews = document.getElementById('msgNews');
+    newsletter.addEventListener('submit', (e)=>{ e.preventDefault(); msgNews.classList.remove('hidden'); setTimeout(()=> msgNews.classList.add('hidden'), 4000); });
+
+    // Current year
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
